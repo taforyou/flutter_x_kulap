@@ -18,15 +18,7 @@ Future<Post> fetchPost() async {
 }
 
 class Post {
-
-  
-  final balances; // เก็บแบบนี้คือ Dynamic Type ซึ่งจริงๆ ก็คือแบบล่าง
-  //final List<Map<String, Object>> balances;
-
-  //final int userId;
-  //final int id;
-  //final String title;
-  //final String body;
+  final balances; 
 
   Post({this.balances});
 
@@ -37,12 +29,10 @@ class Post {
   }
 }
 
-void main() => runApp(MyApp(post: fetchPost()));
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  final Future<Post> post;
-
-  MyApp({Key key, this.post}) : super(key: key);
+  MyApp({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -52,45 +42,73 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: Scaffold(
-        appBar: AppBar(
-          title: Text('Fetch Data Example'),
-        ),
-        body: Center(
-          child: FutureBuilder<Post>(
-            future: post,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                // ตัวอย่างการเล่นกับ List of Map
-                
-                // https://api.dartlang.org/stable/2.2.0/dart-core/Iterable-class.html
-                // Map kidsBooks = {
-                //   'Matilda': 'Roald Dahl',
-                //   'Green Eggs and Ham': 'Dr Seuss',
-                //   'Where the Wild Things Are': 'Maurice Sendak'
-                // };
-                // for (var book in kidsBooks.keys) {
-                //   print('$book was written by ${kidsBooks[book]}');
-                // }
-
-                //print(snapshot.data.balances[0]); // เพราะมีแค่ตัวเดียวจากที่รับมาแล้ว
-                List<String> listArray = [];
-                for (var book in snapshot.data.balances[0].keys) {
-                  listArray.add(snapshot.data.balances[0][book]);
-                  //print(snapshot.data.balances[0][book]);
-                }
-                  return Text(listArray[0]); // คืนเงินที่ Fetch มาจาก API เพราะมั่นใจว่าเป็น Array ตัวที่ 0
-              } else if (snapshot.hasError) {
-                  return Text("${snapshot.error}");
-              }
-
-              // By default, show a loading spinner
-              return CircularProgressIndicator();
-            },
-          ),
-        ),
+        body: MyTempPage(title: 'Flutter Demo Home Page', post: fetchPost()), // ให้รัน Fetch command ตรงนี้ !!!
       ),
     );
   }
 }
 
+class MyTempPage extends StatefulWidget {
+  MyTempPage({Key key, this.title, this.post});
+  // ได้เหมือนกันซึ่งก็ติดไว้ก่อนล่ะกัน ไม่รู้ใช้ตอนไหน ไม่ใช้ตอนไหน !!!
+  // MyTempPage({Key key, this.title, this.post}) : super(key: key);
+  final String title;
+  final Future<Post> post;
 
+  @override
+  _MyTempPageState createState() => _MyTempPageState(post: this.post);
+}
+
+class _MyTempPageState extends State<MyTempPage> {
+  _MyTempPageState({Key key, this.post});
+  final Future<Post> post;
+  int _counter = 0;
+  void _incrementCounter() {
+    print("Hey Dude !!!");
+    setState(() {
+      _counter++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            FutureBuilder<Post>(
+              future: post,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  List<String> listArray = [];
+                  for (var book in snapshot.data.balances[0].keys) {
+                    listArray.add(snapshot.data.balances[0][book]);
+                  }
+                  return Text(listArray[0]);
+                } else if (snapshot.hasError) {
+                  return Text("${snapshot.error}");
+                }
+                // By default, show a loading spinner
+                return CircularProgressIndicator();
+              },
+            ),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.display1,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ), 
+    );
+  }
+}
