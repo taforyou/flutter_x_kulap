@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:stellar/stellar.dart';
 
 Future<Post> fetchPost() async {
   final response = await http.get(
@@ -18,7 +19,7 @@ Future<Post> fetchPost() async {
 }
 
 class Post {
-  final balances; 
+  final balances;
 
   Post({this.balances});
 
@@ -42,7 +43,9 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: Scaffold(
-        body: MyTempPage(title: 'Flutter Demo Home Page', post: fetchPost()), // ให้รัน Fetch command ตรงนี้ !!!
+        body: MyTempPage(
+            title: 'Flutter Demo Home Page',
+            post: fetchPost()), // ให้รัน Fetch command ตรงนี้ !!!
       ),
     );
   }
@@ -63,8 +66,37 @@ class _MyTempPageState extends State<MyTempPage> {
   _MyTempPageState({Key key, this.post});
   final Future<Post> post;
   int _counter = 0;
+
+  void sendPayment() {
+    Network.useTestNetwork();
+    Server server = new Server("https://horizon-testnet.stellar.org");
+
+    KeyPair source = KeyPair.fromSecretSeed(
+        "SDFPPL6DA4K3YZXX3MTPE6WIGSIXOFXSLKZQ5URHDONPISEX7O6RKEVW");
+    KeyPair destination = KeyPair.fromAccountId(
+        "GB74XD276N2MCJOAKGNVJMQFVKAPCXM7R3V2HXX2F27B4EKW7UP23UOP");
+
+    server.accounts.account(source).then((sourceAccount) {
+      Transaction transaction = new TransactionBuilder(sourceAccount)
+          .addOperation(new PaymentOperationBuilder(
+                  destination, new AssetTypeNative(), "200")
+              .build())
+          .addMemo(Memo.text("Test Transaction"))
+          .build();
+      transaction.sign(source);
+
+      server.submitTransaction(transaction).then((response) {
+        print("Success!");
+        print(response);
+      }).catchError((error) {
+        print("Something went wrong!");
+      });
+    });
+  }
+
   void _incrementCounter() {
     print("Hey Dude !!!");
+    sendPayment();
     setState(() {
       _counter++;
     });
@@ -108,7 +140,7 @@ class _MyTempPageState extends State<MyTempPage> {
         onPressed: _incrementCounter,
         tooltip: 'Increment',
         child: Icon(Icons.add),
-      ), 
+      ),
     );
   }
 }
