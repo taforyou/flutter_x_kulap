@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
       ),
       home: Scaffold(
         body: MyTempPage(
-            title: 'Flutter Demo Home Page',
+            title: 'Stellar Demo Wallet',
             post: fetchPost()), // ให้รัน Fetch command ตรงนี้ !!!
       ),
     );
@@ -66,8 +66,14 @@ class _MyTempPageState extends State<MyTempPage> {
   _MyTempPageState({Key key, this.post});
   final Future<Post> post;
   int _counter = 0;
+  bool _isLoading = false;
 
-  void sendPayment() {
+  // Methode นี้ไม่ต้องเป็น Async / Await แล้ว เพราะว่าตัว Lib มันทำให้แล้ว
+  _sendPayment() {
+    setState(() {
+      _isLoading = true;
+    });
+
     Network.useTestNetwork();
     Server server = new Server("https://horizon-testnet.stellar.org");
 
@@ -87,6 +93,9 @@ class _MyTempPageState extends State<MyTempPage> {
 
       server.submitTransaction(transaction).then((response) {
         print("Success!");
+        setState(() {
+          _isLoading = false;
+        });
         print(response);
       }).catchError((error) {
         print("Something went wrong!");
@@ -94,13 +103,40 @@ class _MyTempPageState extends State<MyTempPage> {
     });
   }
 
-  void _incrementCounter() {
-    print("Hey Dude !!!");
-    sendPayment();
-    setState(() {
-      _counter++;
-    });
-  }
+  // void sendPayment() {
+  //   Network.useTestNetwork();
+  //   Server server = new Server("https://horizon-testnet.stellar.org");
+
+  //   KeyPair source = KeyPair.fromSecretSeed(
+  //       "SDFPPL6DA4K3YZXX3MTPE6WIGSIXOFXSLKZQ5URHDONPISEX7O6RKEVW");
+  //   KeyPair destination = KeyPair.fromAccountId(
+  //       "GB74XD276N2MCJOAKGNVJMQFVKAPCXM7R3V2HXX2F27B4EKW7UP23UOP");
+
+  //   server.accounts.account(source).then((sourceAccount) {
+  //     Transaction transaction = new TransactionBuilder(sourceAccount)
+  //         .addOperation(new PaymentOperationBuilder(
+  //                 destination, new AssetTypeNative(), "200")
+  //             .build())
+  //         .addMemo(Memo.text("Test Transaction"))
+  //         .build();
+  //     transaction.sign(source);
+
+  //     server.submitTransaction(transaction).then((response) {
+  //       print("Success!");
+  //       print(response);
+  //     }).catchError((error) {
+  //       print("Something went wrong!");
+  //     });
+  //   });
+  // }
+
+  // void _incrementCounter() {
+  //   print("Hey Dude !!!");
+  //   sendPayment();
+  //   setState(() {
+  //     _counter++;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -108,36 +144,40 @@ class _MyTempPageState extends State<MyTempPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            FutureBuilder<Post>(
-              future: post,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  List<String> listArray = [];
-                  for (var book in snapshot.data.balances[0].keys) {
-                    listArray.add(snapshot.data.balances[0][book]);
-                  }
-                  return Text(listArray[0]);
-                } else if (snapshot.hasError) {
-                  return Text("${snapshot.error}");
-                }
-                // By default, show a loading spinner
-                return CircularProgressIndicator();
-              },
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  FutureBuilder<Post>(
+                    future: post,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        List<String> listArray = [];
+                        for (var book in snapshot.data.balances[0].keys) {
+                          listArray.add(snapshot.data.balances[0][book]);
+                        }
+                        return Text(listArray[0]);
+                      } else if (snapshot.hasError) {
+                        return Text("${snapshot.error}");
+                      }
+                      // By default, show a loading spinner
+                      return CircularProgressIndicator();
+                    },
+                  ),
+                  Text(
+                    '$_counter',
+                    style: Theme.of(context).textTheme.display1,
+                  ),
+                ],
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: _sendPayment,
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ),
